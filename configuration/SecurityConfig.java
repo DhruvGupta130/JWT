@@ -1,6 +1,6 @@
 package com.trulydesignfirm.emenu.configuration;
 
-import com.trulydesignfirm.emenu.configuration.Filter.JwtAuthFilter;
+import com.trulydesignfirm.emenu.configuration.filter.JwtAuthFilter;
 import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginFailureHandler;
 import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;

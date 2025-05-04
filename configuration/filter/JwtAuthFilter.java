@@ -1,4 +1,4 @@
-package com.trulydesignfirm.emenu.configuration.Filter;
+package com.trulydesignfirm.emenu.configuration.filter;
 
 import com.trulydesignfirm.emenu.configuration.CustomUserDetailsService;
 import com.trulydesignfirm.emenu.configuration.JwtUtils;
