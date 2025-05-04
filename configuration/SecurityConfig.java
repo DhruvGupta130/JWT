@@ -1,7 +1,10 @@
-package com.project.orderfood.Configuration;
+package com.trulydesignfirm.emenu.configuration;
 
-import com.project.orderfood.Configuration.Filter.JwtAuthFilter;
-import lombok.AllArgsConstructor;
+import com.trulydesignfirm.emenu.configuration.Filter.JwtAuthFilter;
+import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginFailureHandler;
+import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginSuccessHandler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,32 +27,42 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final OAuth2LoginSuccessHandler successHandler;
+    private final OAuth2LoginFailureHandler failureHandler;
+
+    @Value("${frontend_url}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "RESTAURANT_OWNER")
-                        .requestMatchers("/api/restaurants","/api/food").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/restaurants/**").hasRole("OWNER")
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfiguration()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(successHandler)
+                        .failureHandler(failureHandler)
+                )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     private CorsConfigurationSource corsConfiguration() {
-        return _ -> {
+        return c -> {
             CorsConfiguration config = new CorsConfiguration();
-            config.addAllowedOriginPattern("*");
+            config.addAllowedOriginPattern(frontendUrl);
             config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(Collections.singletonList("*"));
             config.setExposedHeaders(Collections.singletonList("Authorization"));
@@ -65,7 +78,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

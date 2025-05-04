@@ -1,7 +1,7 @@
-package com.project.orderfood.Configuration.Filter;
+package com.trulydesignfirm.emenu.configuration.Filter;
 
-import com.project.orderfood.Configuration.JwtUtils;
-import com.project.orderfood.Service.CustomUserDetailsService;
+import com.trulydesignfirm.emenu.configuration.CustomUserDetailsService;
+import com.trulydesignfirm.emenu.configuration.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -35,14 +35,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String userName;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwtToken = authHeader.replace("Bearer ", "");
-            Claims claims = jwtUtils.parseToken(jwtToken);
-            userName = claims.getSubject();
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
-            if(userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                if (jwtUtils.validateToken(jwtToken, userDetails)) {
-                    Authentication auth = new UsernamePasswordAuthenticationToken(userName, null, userDetails.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                Claims claims = jwtUtils.parseToken(jwtToken);
+                userName = claims.getSubject();
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+                if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    if (jwtUtils.validateToken(jwtToken, userDetails)) {
+                        Authentication auth = new UsernamePasswordAuthenticationToken(userName, null, userDetails.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
                 }
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\": \"" + e.getMessage() + "\", \"status\": 401}");
+                return;
             }
         }
         filterChain.doFilter(request, response);
