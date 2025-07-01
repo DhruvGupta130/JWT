@@ -1,7 +1,6 @@
-package com.trulydesignfirm.emenu.configuration.filter;
+package com.trulydesignfirm.emenu.configuration.Filter;
 
-import com.trulydesignfirm.emenu.configuration.CustomUserDetailsService;
-import com.trulydesignfirm.emenu.configuration.JwtUtils;
+import com.trulydesignfirm.tfsc.configuration.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -13,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,25 +23,22 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
-        final String jwtToken;
-        final String userName;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwtToken = authHeader.replace("Bearer ", "");
+        String jwtToken = jwtUtils.extractToken(request);
+        if (jwtToken != null) {
             try {
                 Claims claims = jwtUtils.parseToken(jwtToken);
-                userName = claims.getSubject();
+                String userName = claims.getSubject();
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
                 if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     if (jwtUtils.validateToken(jwtToken, userDetails)) {
-                        Authentication auth = new UsernamePasswordAuthenticationToken(userName, null, userDetails.getAuthorities());
+                        Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(auth);
                     }
                 }

@@ -1,8 +1,8 @@
 package com.trulydesignfirm.emenu.configuration;
 
-import com.trulydesignfirm.emenu.configuration.filter.JwtAuthFilter;
-import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginFailureHandler;
-import com.trulydesignfirm.emenu.configuration.oauth2.OAuth2LoginSuccessHandler;
+import com.trulydesignfirm.tfsc.configuration.Filter.JwtAuthFilter;
+import com.trulydesignfirm.tfsc.configuration.oauth2.OAuth2LoginFailureHandler;
+import com.trulydesignfirm.tfsc.configuration.oauth2.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -37,12 +37,15 @@ public class SecurityConfig {
     @Value("${frontend_url}")
     private String frontendUrl;
 
+    @Value("${admin_url}")
+    private String adminUrl;
+
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/restaurants/**").hasRole("OWNER")
+                        .requestMatchers("/api/user/**").hasRole("USER")
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(exception -> exception
@@ -63,6 +66,7 @@ public class SecurityConfig {
         return c -> {
             CorsConfiguration config = new CorsConfiguration();
             config.addAllowedOriginPattern(frontendUrl);
+            config.addAllowedOriginPattern(adminUrl);
             config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(Collections.singletonList("*"));
             config.setExposedHeaders(Collections.singletonList("Authorization"));

@@ -4,30 +4,31 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+import java.util.Arrays;
 import java.util.Date;
 
 @Service
 public class JwtUtils {
 
     private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
-    private static final SecretKey key;
 
-    static {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA512");
-            String secretKey = Base64.getEncoder().encodeToString(keyGen.generateKey().getEncoded());
-            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-            key = Keys.hmacShaKeyFor(keyBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Error initializing JWT key", e);
-        }
+    private SecretKey key;
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -47,9 +48,22 @@ public class JwtUtils {
     }
     public boolean validateToken(String token, UserDetails userDetails) {
         final String username = parseToken(token).getSubject();
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (username.equals(userDetails.getUsername()) && isTokenActive(token));
     }
-    public boolean isTokenExpired(String token) {
-        return parseToken(token).getExpiration().before(new Date());
+    public boolean isTokenActive(String token) {
+        return !parseToken(token).getExpiration().before(new Date());
+    }
+
+    public String extractToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) return authHeader.substring(7);
+        if (request.getCookies() != null) {
+            return Arrays.stream(request.getCookies())
+                    .filter(cookie -> "jwt".equals(cookie.getName()))
+                    .map(Cookie::getValue)
+                    .findFirst()
+                    .orElse(null);
+        }
+        return null;
     }
 }

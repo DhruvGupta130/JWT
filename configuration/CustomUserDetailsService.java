@@ -1,7 +1,7 @@
 package com.trulydesignfirm.emenu.configuration;
 
-import com.trulydesignfirm.emenu.model.LoginUser;
-import com.trulydesignfirm.emenu.repository.UserRepo;
+import com.trulydesignfirm.tfsc.model.LoginUser;
+import com.trulydesignfirm.tfsc.repository.LoginUserRepo;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepo userRepository;
+    private final LoginUserRepo loginUserRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        LoginUser user = userRepository.findByEmail(username)
+        LoginUser user = loginUserRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
         return org.springframework.security.core.userdetails.User.builder()
